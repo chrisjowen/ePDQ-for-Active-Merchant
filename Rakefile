@@ -6,7 +6,6 @@ require 'rake/gempackagetask'
 require 'rake/contrib/rubyforgepublisher'
 require File.join(File.dirname(__FILE__), 'lib', 'support', 'gateway_support')
 
-
 PKG_VERSION = "1.4.2"
 PKG_NAME = "activemerchant"
 PKG_FILE_NAME = "#{PKG_NAME}-#{PKG_VERSION}"
@@ -14,7 +13,6 @@ PKG_FILE_NAME = "#{PKG_NAME}-#{PKG_VERSION}"
 PKG_FILES = FileList[
     "lib/**/*", "test/**/*", "script/**/*", "[a-zA-Z]*"
 ].exclude(/\.svn$/)
-
 
 desc "Default Task"
 task :default => 'test:units'
@@ -31,6 +29,20 @@ namespace :test do
 
   Rake::TestTask.new(:remote) do |t|
     t.pattern = 'test/remote/**/*_test.rb'
+    t.ruby_opts << '-rubygems'
+    t.libs << 'test'
+    t.verbose = true
+  end
+  
+  Rake::TestTask.new(:pit) do |t|
+    t.pattern = 'test/remote/gateways/*ePDQ_test.rb'
+    t.ruby_opts << '-rubygems'
+    t.libs << 'test'
+    t.verbose = true
+  end
+  
+    Rake::TestTask.new(:unit_pit) do |t|
+    t.pattern = 'test/unit/gateways/*ePDQ_test.rb'
     t.ruby_opts << '-rubygems'
     t.libs << 'test'
     t.verbose = true

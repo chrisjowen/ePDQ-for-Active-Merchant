@@ -1,8 +1,10 @@
 #!/usr/bin/env ruby
 $:.unshift(File.dirname(__FILE__) + '/../lib')
 
+
 require 'active_merchant'
 require 'rubygems'
+gem 'test-unit'
 require 'money'
 require 'test/unit'
 require 'mocha'

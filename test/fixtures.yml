@@ -10,6 +10,11 @@
 #
 # Paste any required PEM certificates after the pem key.  
 #
+epdq:
+  user: username
+  password: password
+  clientId: 545678904567
+  
 authorize_net:
   login: X
   password: Y
