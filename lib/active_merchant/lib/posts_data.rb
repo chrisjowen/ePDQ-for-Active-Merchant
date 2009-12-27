@@ -3,7 +3,7 @@ module ActiveMerchant #:nodoc:
 
     def self.included(base)
       base.superclass_delegating_accessor :ssl_strict
-      base.ssl_strict = true
+      base.ssl_strict = false
       
       base.class_inheritable_accessor :retry_safe
       base.retry_safe = false

@@ -5,10 +5,10 @@ module ActiveMerchant #:nodoc:
   module Billing #:nodoc:
     class EPDQGateway < Gateway
       
-      URL = 'http://www.xxxxxxxx.com'
-      
-      TEST_URL = 'https://example.com/test'
-      LIVE_URL = 'https://example.com/live'
+      GATEWAY_PORT = '11500'
+      GATEWAY_URL = 'https://secure2.mde.epdq.co.uk'
+      URL = GATEWAY_URL + ":" + GATEWAY_PORT
+
       
       DOC_VERSION = '1.0'
             
@@ -28,7 +28,6 @@ module ActiveMerchant #:nodoc:
         :visa => 1,
         :master => 2,
         :discover => 3,
-        :american_express => 8
       }
       
       # The countries the gateway supports merchants from as 2 digit ISO country codes
@@ -162,19 +161,21 @@ module ActiveMerchant #:nodoc:
         xml.CreditCard{
           type = credit_card.type
           xml.Type(CARDS[type.to_sym] || 1, :DataType=>"S32")
-        xml.Number(credit_card.number)
-        xml.Expires("#{credit_card.year}/#{credit_card.month}", :DataType=>"ExpirationDate", :Local=>"826") 
-       
-        if not credit_card.start_year.nil? or not credit_card.start_month.nil?
-          xml.StartDate("#{credit_card.start_year}/#{credit_card.start_month}", :DataType=>"StartDate", :Local=>"826") 
-        end
-        if not credit_card.issue_number.nil?
-          xml.IssueNum(credit_card.issue_number)
-        end
-        if not credit_card.verification_value.nil?
-          xml.Cvv2Indicator("1")
+          xml.Number(credit_card.number)
+          #TODO: only takes 2 digit year and month
+          #xml.Expires("#{credit_card.year}/#{credit_card.month}", :DataType=>"ExpirationDate", :Locale=>"826") 
+          xml.Expires("10/10", :DataType=>"ExpirationDate", :Locale=>"826") 
+  
+          if not credit_card.start_year.nil? or not credit_card.start_month.nil?
+            xml.StartDate("#{credit_card.start_year}/#{credit_card.start_month}", :DataType=>"StartDate", :Local=>"826") 
+          end
+          if not credit_card.issue_number.nil?
+            xml.IssueNum(credit_card.issue_number)
+          end
+          if not credit_card.verification_value.nil?
+              xml.Cvv2Indicator("1")
               xml.Cvv2Indicator(credit_card.verification_value)
-            end
+          end
          }
        }
     end
@@ -221,19 +222,37 @@ module ActiveMerchant #:nodoc:
      end
       
      def parse(response)
-        EPDQResponseParser.new(response)
+        parser = EPDQResponseParser.new(response)
+        parser.result
      end     
       
-     def commit(request)
+     def commit(request)    
         response = parse(ssl_post(URL, request))
-#        Response.new(response[:result] == "00", message_from(response), response,
-#          :test => response[:message] =~ /\[ test system \]/,
-#          :authorization => response[:authcode],
-#          :cvv_result => response[:cvnresult]
-#        ) 
-     end
+        
+        #NOTE: ePDQ doesn't just return a single code to determine point of failure
+        #It returns the results of several checks i.e. CCV, Card auth, system auth. 
+        #For simpliciity, I will just be returning the CCV result + overall success + any err messages
+        approved = (response[:card_proc_response].size > 0) && (response[:card_proc_response][:CcErrCode].to_i == 1)
+        cvv_result = (response[:card_proc_response].size > 0) && (response[:card_proc_response][:Cvv2Resp].to_i == 1)
 
+        message_from(approved, response)
+        Response.new(approved, message_from(approved, response), response
+  #          :test => response[:message],
+  #          :authorization => response[:authcode],
+  #          :cvv_result => cvv_result
+         ) 
     end
-  end
+    def message_from(approved, response)
+        return "Success" unless not approved
+        begin
+          first_message = response[:error_response][:messages][0]
+          return "#{first_message[:message]} (Severity: #{first_message[:sev]})"
+        end
+        rescue
+            return "Unknown error"
+        end
+      end 
+    end
 end
+
 

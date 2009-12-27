@@ -1,9 +1,13 @@
  class EPDQResponseParser
+    
+    attr_accessor :result
+    
     def initialize(response)
-        parse(response)
+      @result = parse(response)
     end
     def parse(response_string)
         response = {}
+        #print response_string
         xml = REXML::Document.new(response_string)
         xml = REXML::XPath.first(xml, "/EngineDocList/EngineDoc")
         max_sev_node = REXML::XPath.first(xml, 'MessageList/MaxSev')
@@ -14,12 +18,11 @@
           parse_errors(REXML::XPath.first(xml, 'MessageList'), response[:error_response])
         end
         
-        response[:card_proc_response] = {}
-        parse_card_proc_response(REXML::XPath.first(xml, 'OrderFormDoc/Transaction/CardProcResp'), response[:card_proc_response])
-      
-      print response[:card_proc_response].inspect
+        response[:card_proc_response] = parse_card_proc_response(REXML::XPath.first(xml, 'OrderFormDoc/Transaction/CardProcResp'))
+        return response
     end
     def parse_errors(xml, error_response)
+      return unless not xml.nil?
       error_response[:messages] = []
       xml.elements.each("Message/") do |node|
         message = REXML::XPath.first(node, "Text/").text
@@ -27,12 +30,15 @@
         error_response[:messages].push({:message => message, :sev => sev})
       end
   end
-  def parse_card_proc_response(xml, card_proc_response)
-      xml.elements.each do |node| 
-          print node.name.to_sym
-          {
-            node.name.to_sym => node.text
-          }.update(card_proc_response)
-      end
+  def parse_card_proc_response(xml)
+    card_proc_response = {}
+    return card_proc_response unless not xml.nil?
+    xml.elements.each do |node| 
+        els = {
+          node.name.to_sym => node.text
+        }
+        card_proc_response = card_proc_response.merge(els)
+    end
+    return card_proc_response
   end
  end

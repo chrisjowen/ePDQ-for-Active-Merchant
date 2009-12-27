@@ -18,7 +18,8 @@ class RemoteEPDQTest < Test::Unit::TestCase
   end
   
   def test_something
-    @gateway.purchase(@amount, @credit_card, @options)
+    response = @gateway.purchase(@amount, @credit_card, @options)
+    print response.inspect
   end
 
  

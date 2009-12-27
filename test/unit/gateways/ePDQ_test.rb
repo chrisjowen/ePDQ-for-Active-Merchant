@@ -18,30 +18,115 @@ class EPDQTest < Test::Unit::TestCase
     }
   end
   
-  def test_successful_purchase
-    @gateway.expects(:ssl_post).returns(successful_purchase_response)
-    
-    @gateway.purchase(@amount, @credit_card, @options)
-    #assert_instance_of 
-    #assert_success response
-    
-    # Replace with authorization number from the successful response
-#    assert_equal '', response.authorization
-#    assert response.test?
+  def test_unsuccessful_request
+    @gateway.expects(:ssl_post).returns(not_enough_privillages_response) 
+    response = @gateway.purchase(@amount, @credit_card, @options)
+
+    assert_failure response
+    assert_true response.message != ""
   end
 
-#  def test_unsuccessful_request
-#    @gateway.expects(:ssl_post).returns(failed_purchase_response)
-#    
-#    assert response = @gateway.purchase(@amount, @credit_card, @options)
-#    assert_failure response
-#    assert response.test?
-#  end
+  def test_successful_request
+    @gateway.expects(:ssl_post).returns(successful_purchase_response)
+    
+    response = @gateway.purchase(@amount, @credit_card, @options)
+        
+    assert_success response
+  end
 
   private
 
-  # Place raw failed response from gateway here
-  def failed_purcahse_response
+  def not_enough_privillages_response
+    <<-RESPONSE
+    <?xml version="1.0" encoding="UTF-8"?>
+      <EngineDocList>
+        <DocVersion DataType="String">1.0</DocVersion>
+        <EngineDoc>
+          <ContentType DataType="String">OrderFormDoc</ContentType>
+          <DocumentId DataType="String">4b3190e4-f3db-3000-002b-00144ff2e45c</DocumentId>
+          <Instructions>
+            <Pipeline DataType="String">PAYMENT</Pipeline>
+          </Instructions>
+          <MessageList>
+            <MaxSev DataType="S32">6</MaxSev>
+            <Message>
+              <AdvisedAction DataType="S32">16</AdvisedAction>
+              <Audience DataType="String">Merchant</Audience>
+              <Component DataType="String">Director</Component>
+              <ContextId DataType="String">Director</ContextId>
+              <DataState DataType="S32">3</DataState>
+              <FileLine DataType="S32">925</FileLine>
+              <FileName DataType="String">CcxInput.cpp</FileName>
+              <FileTime DataType="String">14:32:10Oct 13 2007</FileTime>
+              <ResourceId DataType="S32">7</ResourceId>
+              <Sev DataType="S32">6</Sev>
+              <Text DataType="String">Insufficient permissions to perform requested operation.</Text>
+            </Message>
+          </MessageList>
+          <OrderFormDoc>
+            <Consumer>
+              <BillTo>
+                <Location>
+                  <Address>
+                    <City DataType="String">Ottawa</City>
+                    <Firstname DataType="String">Jim Smith</Firstname>
+                    <PostalCode DataType="String">K1C2N6</PostalCode>
+                    <StateProv DataType="String">ON</StateProv>
+                    <Street1 DataType="String">1234 My Street</Street1>
+                    <Street2 DataType="String">Apt 1</Street2>
+                  </Address>
+                </Location>
+              </BillTo>
+              <Email DataType="String">Email</Email>
+              <PaymentMech>
+                <CreditCard>
+                  <Cvv2Indicator DataType="String">1</Cvv2Indicator>
+                  <Cvv2Indicator DataType="String">123</Cvv2Indicator>
+                  <Expires DataType="ExpirationDate">10/10</Expires>
+                  <Number DataType="String">4000100011112224</Number>
+                  <Type DataType="S32">1</Type>
+                </CreditCard>
+              </PaymentMech>
+              <ShipTo>
+                <Location>
+                  <Address>
+                    <City DataType="String">Ottawa</City>
+                    <Firstname DataType="String">Jim Smith</Firstname>
+                    <PostalCode DataType="String">K1C2N6</PostalCode>
+                    <StateProv DataType="String">ON</StateProv>
+                    <Street1 DataType="String">1234 My Street</Street1>
+                    <Street2 DataType="String">Apt 1</Street2>
+                  </Address>
+                </Location>
+              </ShipTo>
+              <Transaction>
+                <CurrentTotals>
+                  <Totals>
+                    <PayerAuthenticationCode DataType="String"></PayerAuthenticationCode>
+                    <PayerSecurityLevel DataType="S32">0</PayerSecurityLevel>
+                    <PayerTxnId DataType="String"></PayerTxnId>
+                    <Total DataType="Money" Currency="826">100</Total>
+                  </Totals>
+                </CurrentTotals>
+                <Type DataType="String">Auth</Type>
+              </Transaction>
+            </Consumer>
+            <Id DataType="String"></Id>
+            <Mode DataType="String">T</Mode>
+          </OrderFormDoc>
+          <User>
+            <Alias DataType="String">1997</Alias>
+            <ClientId DataType="S32">1997</ClientId>
+            <EffectiveAlias DataType="String">1997</EffectiveAlias>
+            <EffectiveClientId DataType="S32">1997</EffectiveClientId>
+            <Name DataType="String">mdeusr</Name>
+            <Password DataType="String">XXXXXXX</Password>
+          </User>
+        </EngineDoc>
+        <TimeIn DataType="DateTime">1261915495714</TimeIn>
+        <TimeOut DataType="DateTime">1261915495717</TimeOut>
+      </EngineDocList>
+    RESPONSE
   end
 
   def successful_purchase_response
@@ -56,7 +141,7 @@ class EPDQTest < Test::Unit::TestCase
       <Pipeline DataType="String">Payment</Pipeline>
       </Instructions>
       <MessageList>
-      <MaxSev DataType="S32">1</MaxSev>
+      <MaxSev DataType="S32"></MaxSev>
       <Message>
       <Sev DataType="S32"></Sev>
       <Text DataType="String"></Text>
@@ -113,15 +198,15 @@ class EPDQTest < Test::Unit::TestCase
       <Transaction>
       <AuthCode DataType="String">611287</AuthCode>
       <CardProcResp>
-      <AvsDisplay DataType="String">YY</AvsDisplay>
-      <AvsRespCode DataType="String">EX</AvsRespCode>
-      <CcErrCode DataType="S32">1</CcErrCode>
-      <CcReturnMsg DataType="String">Approved</CcReturnMsg>
-      <Cvv2Resp DataType="String">1</Cvv2Resp>
-      <ProcAvsRespCode DataType="String">44</ProcAvsRespCode>
-      <ProcReturnCode DataType="String">1</ProcReturnCode>
-      <ProcReturnMsg DataType="String">Approved</ProcReturnMsg>
-      <Status DataType="String">1</Status>
+        <AvsDisplay DataType="String">YY</AvsDisplay>
+        <AvsRespCode DataType="String">EX</AvsRespCode>
+        <CcErrCode DataType="S32">1</CcErrCode>
+        <CcReturnMsg DataType="String">Approved</CcReturnMsg>
+        <Cvv2Resp DataType="String">1</Cvv2Resp>
+        <ProcAvsRespCode DataType="String">44</ProcAvsRespCode>
+        <ProcReturnCode DataType="String">1</ProcReturnCode>
+        <ProcReturnMsg DataType="String">Approved</ProcReturnMsg>
+        <Status DataType="String">1</Status>
       </CardProcResp>
       <CardholderPresentCode DataType="S32">7</CardholderPresentCode>
       <CurrentTotals>
